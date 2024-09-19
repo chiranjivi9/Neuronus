@@ -1,5 +1,6 @@
 import time
 import json
+import sys
 
 class NeuronusStore:
     """
@@ -15,6 +16,7 @@ class NeuronusStore:
         """
         self.store = {}
         self.time_to_live = {}
+        self.analytics_store = {}
 
     def set(self, key, value):
         """
@@ -26,6 +28,7 @@ class NeuronusStore:
             str: "OK" to indicate success.
         """
         self.store[key] = value
+        self.record_command_access_pattern(key)
         if key in self.time_to_live:
             del self.time_to_live[key]
         return "OK"
@@ -38,6 +41,7 @@ class NeuronusStore:
         Returns:
             any: The value associated with the key, or None if the key doesn't exist or has expired.
         """
+        self.record_command_access_pattern(key)
         if key in self.time_to_live and time.time() > self.time_to_live[key]:
             del self.store[key]
             del self.time_to_live[key]
@@ -53,6 +57,8 @@ class NeuronusStore:
         Returns:
             int: 1 if the TTL was set successfully, 0 if the key was not found.
         """
+        
+        self.record_command_access_pattern(key)
         if key in self.store:
             self.time_to_live[key] = time.time() + int(seconds)
             return 1
@@ -66,6 +72,7 @@ class NeuronusStore:
         Returns:
             int: 1 if the key was deleted, 0 if the key was not found.
         """
+        self.record_command_access_pattern(key)
         if key in self.store:
             del self.store[key]
             if key in self.time_to_live:
@@ -81,6 +88,26 @@ class NeuronusStore:
         """
         with open(filename, 'w') as f:
             json.dump(self.store, f)
+        
+        # Save analytics data to disk
+        temp_analytics_store = []
+        
+        for key in self.analytics_store:
+            value = self.analytics_store[key]
+            temp_analytics_store.append({
+                "key": key,
+                "access_count": value["access_count"],
+                "last_accessed": value["last_accessed"],
+                "size": value["size"],
+                "ttl": value["ttl"]
+            })
+            
+        print('temp_analytics_store: ', temp_analytics_store)
+        
+        # Save the analytics data to a separate file
+        with open('neuronus_analytics_store.rdb', 'w') as f:
+            json.dump(temp_analytics_store, f)
+
 
     def load_from_disk(self, filename='neuronus_local_store.rdb'):
         """
@@ -93,3 +120,31 @@ class NeuronusStore:
                 self.store = json.load(f)
         except FileNotFoundError:
             pass
+
+    def record_command_access_pattern(self, key):
+        """
+        Logs the access pattern for each key. Tracks:
+            - access count
+            - time of last access
+            - size of the key's value
+            - current TTL of the key (if applicable)
+        """
+        value = self.store.get(key, None)
+        
+        if value is None:
+            return
+        
+        if key not in self.analytics_store:
+            self.analytics_store[key] = {
+                "access_count": 1,
+                "last_accessed": time.time(),
+                "size": sys.getsizeof(value),
+                "ttl": self.time_to_live.get(key, None)
+            }
+        else:
+            self.analytics_store[key]["access_count"] += 1
+            self.analytics_store[key]["last_accessed"] = time.time()
+         
+
+        self.analytics_store[key]["size"] = sys.getsizeof(value)
+        self.analytics_store[key]["ttl"] = self.time_to_live.get(key, None)

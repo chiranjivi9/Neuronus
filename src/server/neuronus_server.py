@@ -63,6 +63,7 @@ class NeuronusServer:
             if len(parts) != 3:
                 return "ERR wrong number of arguments for SET \n"
             key, value = parts[1], parts[2]
+            
             return self.store.set(key, value)
         
         elif cmd == 'GET':
@@ -95,7 +96,7 @@ class NeuronusServer:
             self.store.save_to_disk()
             await asyncio.sleep(interval)
             
-    async def cleanup_expired_keys(self, interval=90):
+    async def cleanup_expired_keys(self, interval=120):
         """
         Cleans up expired keys from the store at regular intervals.
         """
@@ -129,6 +130,7 @@ class NeuronusServer:
         print("Cancelling outstanding tasks...")
         await asyncio.gather(*tasks, return_exceptions=True)
         loop.stop()
+        
 
 if __name__ == '__main__':
     # Initialize the event loop
