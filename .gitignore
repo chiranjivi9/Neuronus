@@ -1,1 +1,12 @@
+# Python
+*.pyc
+__pycache__/
+
+# Virtual environment
+myenv/
+
+# macOS files
+.DS_Store
+
+# analytics file
 src/machine_learning/helpers/generated_analytics.json
