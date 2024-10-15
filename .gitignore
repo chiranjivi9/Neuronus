@@ -10,3 +10,6 @@ myenv/
 
 # analytics file
 src/machine_learning/helpers/generated_analytics.json
+
+# error log file
+ml_workflow.log

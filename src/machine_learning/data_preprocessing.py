@@ -47,6 +47,9 @@ def preprocess_data():
     # Fill missing values in the 'ttl' column with 0. Alternatively, we can use median or drop rows
     df['ttl'] = df['ttl'].fillna(0)
     
+    # Drop non-numeric columns like 'key'
+    if 'key' in df.columns:
+        df = df.drop(columns=['key'])
     
     # 1.3 Normalizing Features
         # In machine learning, it’s common to normalize or scale features so that
@@ -71,6 +74,3 @@ def preprocess_data():
     print(df.head())
     
     return df
-
-
-preprocess_data()
